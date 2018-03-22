@@ -124,6 +124,20 @@ public abstract class Artifact<T extends Artifact<T>> implements Comparable<T>, 
     private String hash;
 
     /**
+     * Whether the artifact has been paired.
+     *
+     * @author paul
+     */
+    private boolean paired;
+
+    /**
+     * The proper match we had paired with, if exists.
+     *
+     * @author paul
+     */
+    private Optional<T> pairedWith;
+
+    /**
      * Constructs a new <code>Artifact</code>.
      *
      * @param rev    the <code>Revision</code> for the <code>Artifact</code>
@@ -161,6 +175,8 @@ public abstract class Artifact<T extends Artifact<T>> implements Comparable<T>, 
         this.merged = toCopy.merged;
         this.revision = toCopy.revision;
         this.number = toCopy.number;
+        this.paired = toCopy.paired;
+        this.pairedWith = toCopy.pairedWith;
     }
 
     /**
@@ -956,5 +972,45 @@ public abstract class Artifact<T extends Artifact<T>> implements Comparable<T>, 
      */
     public boolean isList() {
         return false;
+    }
+
+    /**
+     * Set the proper match we had paired for this artifact.
+     *
+     * @param artifact the proper match for this artifact.
+     * @author paul
+     */
+    public void setPairedWith(T artifact) {
+        this.paired = true;
+        this.pairedWith = Optional.of(artifact);
+    }
+
+    /**
+     * Set this node as no proper match.
+     *
+     * @author paul
+     */
+    public void setPairedWithNothing() {
+        this.paired = true;
+        this.pairedWith = Optional.empty();
+    }
+
+    /**
+     * Get proper match, may be empty.
+     *
+     * @return the proper match, or empty.
+     */
+    public Optional<T> getPair() {
+        assert paired;
+        return pairedWith;
+    }
+
+    /**
+     * Check if this artifact has been paired.
+     *
+     * @return paired or not.
+     */
+    public boolean isPaired() {
+        return paired;
     }
 }

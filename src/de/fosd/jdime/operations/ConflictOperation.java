@@ -121,7 +121,7 @@ public class ConflictOperation<T extends Artifact<T>> extends Operation<T> {
 
             choice.addVariant(rightCondition, right);
             target.addChild(choice);
-        } else if (target != null) {
+        } else {
             LOG.fine("Creating a conflict node.");
             target.addChild(target.createConflictArtifact(left, right, base));
         }
@@ -131,7 +131,7 @@ public class ConflictOperation<T extends Artifact<T>> extends Operation<T> {
     public final String toString() {
         String lId = left != null ? left.getId() : "NONE";
         String rId = right != null ? right.getId() : "NONE";
-        String tId = target != null ? target.getId(): "NONE";
+        String tId = target.getId();
 
         if (leftCondition == null && rightCondition == null) {
             return String.format("%s: BETWEEN %s AND %s UNDER %s", getId(), lId, rId, tId);
