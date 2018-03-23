@@ -52,7 +52,7 @@ public class Merge<T extends Artifact<T>> implements MergeInterface<T> {
 
     private UnorderedMerge<T> unorderedMerge = null;
     private OrderedMerge<T> orderedMerge = null;
-    private DirectMerge<T> directMerge = null;
+    private LevelwiseMerge<T> levelwiseMerge = null;
     private String logprefix;
 
     /**
@@ -245,10 +245,10 @@ public class Merge<T extends Artifact<T>> implements MergeInterface<T> {
                 }
                 orderedMerge.merge(operation, context);
             } else {
-                if (directMerge == null) {
-                    directMerge = new DirectMerge<>();
+                if (levelwiseMerge == null) {
+                    levelwiseMerge = new LevelwiseMerge<>();
                 }
-                directMerge.merge(operation, context);
+                levelwiseMerge.merge(operation, context);
             }
         } else {
             if (unorderedMerge == null) {
