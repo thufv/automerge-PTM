@@ -69,7 +69,7 @@ public class ConflictOperation<T extends Artifact<T>> extends Operation<T> {
      *         the condition for the right alternative, may be {@code null}
      */
     public ConflictOperation(T left, T right, T target, String leftCondition, String rightCondition, T base) {
-        new ConflictOperation<>(left, right, target, leftCondition, rightCondition, base, true);
+        this(left, right, target, leftCondition, rightCondition, base, true);
     }
 
     public ConflictOperation(T self, T other, T target, String cond1, String cond2, T base,

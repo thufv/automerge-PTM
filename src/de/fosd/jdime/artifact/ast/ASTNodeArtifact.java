@@ -560,6 +560,8 @@ public class ASTNodeArtifact extends Artifact<ASTNodeArtifact> {
                             "children: %d after AST rebuild. This is either a bug in ExtendJ or in JDime! " +
                             "Inspect AST element %s", astnode.getClass(), getNumChildren(),
                     astnode.getNumChildNoTransform(), getId());
+            System.err.println(astnode.dumpTree());
+            System.err.println(this.dump(PLAINTEXT_TREE));
             throw new AbortException(msg);
         }
     }

@@ -93,9 +93,13 @@ public class BasicMerge<T extends Artifact<T>> {
                 : MergeType.THREEWAY;
         T baseChild = mBase == null ? left.createEmptyArtifact(BASE)
                 : mBase.getMatchingRevision(base);
+        T targetChild = target == null ? null : left.copy();
+        if (targetChild != null) {
+            target.addChild(targetChild);
 
-        T targetChild = left.copy();
-        target.addChild(targetChild);
+            assert targetChild.exists();
+            targetChild.clearChildren();
+        }
 
         MergeScenario<T> childTriple = new MergeScenario<>(childType,
                 left, baseChild, right);

@@ -4,10 +4,17 @@ import de.fosd.jdime.artifact.Artifact;
 import de.fosd.jdime.config.merge.MergeContext;
 import de.fosd.jdime.config.merge.MergeScenario;
 import de.fosd.jdime.config.merge.Revision;
+import de.fosd.jdime.matcher.matching.Matching;
+import de.fosd.jdime.operations.AddOperation;
+import de.fosd.jdime.operations.ConflictOperation;
 import de.fosd.jdime.operations.MergeOperation;
+import de.fosd.jdime.strdump.DumpMode;
 
 import java.util.Iterator;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static de.fosd.jdime.config.merge.MergeScenario.BASE;
 
 /**
  * Level-wise merge, i.e. merge argument lists one by one.
@@ -54,12 +61,41 @@ public class LevelwiseMerge<T extends Artifact<T>> extends BasicMerge<T> impleme
             T leftChild = leftIt.next();
             T rightChild = rightIt.next();
 
-            if (!(leftChild.matches(rightChild) && rightChild.matches(leftChild))) {
-                // TODO: fix non proper
-                LOG.warning(String.format("Level-wise: not proper: %s <-> %s", show(leftChild), show(rightChild)));
+            if (leftChild.matches(rightChild) && rightChild.matches(leftChild)) {
+                LOG.fine(String.format("Level-wise: %s, %s", show(leftChild), show(rightChild)));
+                twoOrThreeWayMerge(leftChild, rightChild, target, b, context);
+                continue;
             }
-            LOG.fine(String.format("Level-wise: %s, %s", show(leftChild), show(rightChild)));
-            twoOrThreeWayMerge(leftChild, rightChild, target, b, context);
+
+            // leftChild and rightChild are not matched with each other
+            Matching<T> mBase = leftChild.getMatching(b);
+            T baseChild = mBase == null ? leftChild.createEmptyArtifact(BASE)
+                    : mBase.getMatchingArtifact(leftChild);
+
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.warning(String.format("Level-wise: NOT matched: %s, %s", show(leftChild), show(rightChild)));
+            }
+
+            if (b != null && !leftChild.hasChanges(b)) { // `leftChild` = base, `rightChild` = target
+                LOG.fine(String.format("Level-wise: %s is a change", show(leftChild)));
+
+                // add the right change
+                AddOperation<T> addOp = new AddOperation<>(rightChild, target, r.getName());
+                rightChild.setMerged();
+                addOp.apply(context);
+            } else if (b != null && !rightChild.hasChanges(b)) { // `rightChild` = base, `leftChild` = target
+                LOG.fine(String.format("Level-wise: %s is a change", show(rightChild)));
+
+                // add the left change
+                AddOperation<T> addOp = new AddOperation<>(leftChild, target, r.getName());
+                leftChild.setMerged();
+                addOp.apply(context);
+            } else {
+                // either insertion-deletion-conflict or deletion-insertion-conflict
+                ConflictOperation<T> conflictOp = new ConflictOperation<>(
+                        leftChild, rightChild, target, l.getName(), r.getName(), baseChild);
+                conflictOp.apply(context);
+            }
         }
     }
 
