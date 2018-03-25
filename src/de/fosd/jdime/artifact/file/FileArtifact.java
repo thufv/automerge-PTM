@@ -716,7 +716,7 @@ public class FileArtifact extends Artifact<FileArtifact> {
                         }
                     });
 
-                    if (Main.config.getBoolean(CLI_SYNTHESIS).isPresent()) { // synthesis
+                    if (Main.config.getBoolean(CLI_SYNTHESIS).orElse(false)) { // synthesis
                         try {
                             operation.targetCache.solveConflicts(nodes, context, scenario);
                         } catch (Throwable e) {
