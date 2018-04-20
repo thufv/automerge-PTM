@@ -50,8 +50,6 @@ public class OrderedMerge<T extends Artifact<T>> extends BasicMerge<T> implement
         List<T> leftList = left.getChildren();
         List<T> rightList = right.getChildren();
 
-        pair(leftList, rightList, l, r);
-
         Iterator<T> leftIt = leftList.iterator();
         Iterator<T> rightIt = rightList.iterator();
         T leftChild = leftIt.next();
@@ -88,7 +86,8 @@ public class OrderedMerge<T extends Artifact<T>> extends BasicMerge<T> implement
                 continue;
             }
 
-            if (leftChild != null && !leftChild.getPair().isPresent()) {// 2) left has no proper match
+            if (leftChild != null &&
+                    !leftChild.getProperMatch(r, context).isPresent()) { // 2) left has no proper match
                 LOG.fine(String.format("Ordered: %s", show(leftChild)));
                 simpleMerge(leftChild, target, context, l, r, b, true);
 
@@ -99,7 +98,8 @@ public class OrderedMerge<T extends Artifact<T>> extends BasicMerge<T> implement
                 }
                 continue;
             }
-            if (rightChild != null && !rightChild.getPair().isPresent()) { // 2) right has no proper match
+            if (rightChild != null &&
+                    !rightChild.getProperMatch(l, context).isPresent()) { // 2) right has no proper match
                 LOG.fine(String.format("Ordered: %s", show(rightChild)));
                 simpleMerge(rightChild, target, context, r, l, b, false);
 
@@ -111,7 +111,8 @@ public class OrderedMerge<T extends Artifact<T>> extends BasicMerge<T> implement
                 continue;
             }
 
-            if (leftChild != null && rightChild != null && leftChild.getPair().get() == rightChild) {
+            if (leftChild != null && rightChild != null &&
+                    leftChild.getProperMatch(r, context).get() == rightChild) {
                 // 3) (left, right) forms a proper match
                 LOG.fine(String.format("Ordered: %s, %s", show(leftChild), show(rightChild)));
                 twoOrThreeWayMerge(leftChild, rightChild, target, b, context);

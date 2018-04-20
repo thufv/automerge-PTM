@@ -8,7 +8,6 @@ import de.fosd.jdime.matcher.matching.Matching;
 import de.fosd.jdime.operations.AddOperation;
 import de.fosd.jdime.operations.ConflictOperation;
 import de.fosd.jdime.operations.MergeOperation;
-import de.fosd.jdime.strdump.DumpMode;
 
 import java.util.Iterator;
 import java.util.logging.Level;

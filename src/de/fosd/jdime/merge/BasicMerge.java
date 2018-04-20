@@ -1,6 +1,5 @@
 package de.fosd.jdime.merge;
 
-import de.fosd.jdime.Main;
 import de.fosd.jdime.artifact.Artifact;
 import de.fosd.jdime.config.merge.MergeContext;
 import de.fosd.jdime.config.merge.MergeScenario;
@@ -12,22 +11,15 @@ import de.fosd.jdime.operations.ConflictOperation;
 import de.fosd.jdime.operations.DeleteOperation;
 import de.fosd.jdime.operations.MergeOperation;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import static de.fosd.jdime.artifact.Artifacts.copyTree;
-import static de.fosd.jdime.config.CommandLineConfigSource.CLI_THRESHOLD;
 import static de.fosd.jdime.config.merge.MergeScenario.BASE;
 
 public class BasicMerge<T extends Artifact<T>> {
 
     private static final Logger LOG = Logger.getLogger(BasicMerge.class.getCanonicalName());
-    protected double likelihood;
-
-    public BasicMerge() {
-        likelihood = Main.config.getDouble(CLI_THRESHOLD).orElse(0.2);
-    }
 
     /**
      * Applying a simple merge when `node` has no proper match in the `other` revision.
@@ -44,22 +36,22 @@ public class BasicMerge<T extends Artifact<T>> {
      * @param context merge context.
      * @param self    revision of node.
      * @param other   revision of other (which is empty).
-     * @param base    revision of base.
+     * @param b       revision of base.
      * @param isLeft  if the revision of `self` is left.
      */
     protected void simpleMerge(T node, T target, MergeContext context,
-                               Revision self, Revision other, Revision base, boolean isLeft) {
-        if (base.contains(node) && node.hasMatching(base) &&
-                node.getMatching(base).getPercentage() > likelihood) { // 1) `pivot` in BL
+                               Revision self, Revision other, Revision b, boolean isLeft) {
+        Optional<T> base = node.getProperMatch(b, context);
+
+        if (base.isPresent()) { // 1) `pivot` in BL
             LOG.fine(() -> String.format("Simple: %s was deleted by %s", show(node), other.getName()));
 
-            if (node.hasChanges(base)) {
+            if (node.hasChanges(b)) {
                 // 1-1) insertion-deletion-conflict
                 LOG.fine(() -> String.format("Simple: %s has changed base.", show(node)));
 
-                T baseChild = node.getMatching(base).getMatchingRevision(base);
                 ConflictOperation<T> conflictOp = new ConflictOperation<>(
-                        node, null, target, self.getName(), other.getName(), baseChild, isLeft);
+                        node, null, target, self.getName(), other.getName(), base.get(), isLeft);
                 conflictOp.apply(context);
             } else {
                 // 1-2) can be safely deleted
@@ -108,53 +100,6 @@ public class BasicMerge<T extends Artifact<T>> {
         left.setMerged();
         right.setMerged();
         mergeOp.apply(context);
-    }
-
-    private void findBestPairOf(T artifact, Revision self, Revision other) {
-        Matching<T> match = artifact.getMatching(other);
-        if (match == null || match.getPercentage() < likelihood) {
-            LOG.fine(() -> String.format("Pair: %s <-> <empty>", show(artifact)));
-
-            artifact.setPairedWithNothing();
-            return;
-        }
-
-        T matched = match.getMatchingRevision(other);
-        Matching<T> match1 = matched.getMatching(self);
-        if (match1 != null && match1.getMatchingRevision(self) == artifact) {
-            LOG.fine(() -> String.format("Pair: %s <-> %s", show(artifact), show(matched)));
-
-            // (`artifact`, `matched`) forms a proper merge scenario
-            artifact.setPairedWith(matched);
-            matched.setPairedWith(artifact);
-            return;
-        }
-
-        if (match1 == null || match1.getPercentage() < match.getPercentage()) {
-            LOG.warning(() -> String.format("Pair: weak pair: %s <-> %s", show(artifact), show(matched)));
-
-            // (`artifact`, `matched`) forms a (weak) proper merge scenario
-            artifact.setPairedWith(matched);
-            matched.setPairedWith(artifact);
-        }
-    }
-
-    protected void pair(List<T> leftList, List<T> rightList, Revision left, Revision right) {
-        Iterator<T> leftIt = leftList.iterator();
-        while (leftIt.hasNext()) {
-            T leftChild = leftIt.next();
-            if (!leftChild.isPaired()) {
-                findBestPairOf(leftChild, left, right);
-            }
-        }
-
-        Iterator<T> rightIt = rightList.iterator();
-        while (rightIt.hasNext()) {
-            T rightChild = rightIt.next();
-            if (!rightChild.isPaired()) {
-                findBestPairOf(rightChild, right, left);
-            }
-        }
     }
 
     /**

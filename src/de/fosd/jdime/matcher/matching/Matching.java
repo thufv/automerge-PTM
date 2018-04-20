@@ -23,12 +23,12 @@
  */
 package de.fosd.jdime.matcher.matching;
 
-import java.util.Objects;
-import java.util.logging.Logger;
-
 import de.fosd.jdime.artifact.Artifact;
 import de.fosd.jdime.config.merge.Revision;
 import de.fosd.jdime.util.UnorderedTuple;
+
+import java.util.Objects;
+import java.util.logging.Logger;
 
 /**
  * A container class representing a matching between two <code>T</code>s.
@@ -53,6 +53,8 @@ public class Matching<T extends Artifact<T>> implements Cloneable, Comparable<Ma
     private float percentage;
     private int score;
     private boolean fullyMatched;
+    private double relevance;
+    private boolean relevanceIsCalculated = false;
 
     /**
      * Constructs a new <code>Matching</code> between the two given <code>T</code>s.
@@ -92,6 +94,8 @@ public class Matching<T extends Artifact<T>> implements Cloneable, Comparable<Ma
         this.matchedArtifacts = UnorderedTuple.of(toCopy.matchedArtifacts.getX(), toCopy.matchedArtifacts.getY());
         this.percentage = toCopy.percentage;
         this.score = toCopy.score;
+        this.relevanceIsCalculated = toCopy.relevanceIsCalculated;
+        this.relevance = toCopy.relevance;
     }
 
     /**
@@ -230,6 +234,52 @@ public class Matching<T extends Artifact<T>> implements Cloneable, Comparable<Ma
     }
 
     /**
+     * Set relevance.
+     *
+     * @author paul
+     */
+    public void calculateRelevance() {
+        T left = getLeft();
+        T right = getRight();
+
+        if (left == null || right == null) {
+            relevance = 0;
+        } else if (fullyMatched) {
+            relevance = 1;
+        } else {
+            relevance = 0.5;
+            if (left.getNumChildren() == right.getNumChildren()) { // constructed nodes
+                int n = left.getNumChildren();
+
+                double childrenRelevance = 0;
+                for (int i = 0; i < n; i++) {
+                    T leftChild = left.getChild(i);
+                    T rightChild = right.getChild(i);
+                    if (leftChild.matches(rightChild)) {
+                        Matching<T> m = leftChild.getMatching(rightChild.getRevision());
+                        childrenRelevance += m.getRelevance();
+                    }
+                }
+                relevance += 0.5 * childrenRelevance / n;
+            } else { // lists
+                relevance += 0.5 * getPercentage();
+            }
+        }
+
+        relevanceIsCalculated = true;
+    }
+
+    /**
+     * Get relevance.
+     *
+     * @author paul
+     */
+    public double getRelevance() {
+        if (!relevanceIsCalculated) calculateRelevance();
+        return relevance;
+    }
+
+    /**
      * Returns true iff the nodes have fully matched, i.e., 100 percent of the trees has been matched.
      *
      * @return true iff trees have fully been matched
@@ -277,7 +327,8 @@ public class Matching<T extends Artifact<T>> implements Cloneable, Comparable<Ma
     @Override
     public String toString() {
         int percentage = (int) (getPercentage() * 100);
-        return String.format("(%s, %s) = %d (%d%%)", getLeft().getId(), getRight().getId(), score, percentage);
+        return String.format("(%s) %s <-> (%s) %s = %d (%d%%)",
+                getLeft().getId(), getLeft(), getRight().getId(), getRight(), score, percentage);
     }
 
     @Override

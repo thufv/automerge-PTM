@@ -96,6 +96,14 @@ public class CommandLineConfigSource extends ConfigSource {
      */
     public static final String CLI_THRESHOLD = "th";
 
+    /**
+     * Use percentage as matching pair score.
+     * -per, --percentage
+     *
+     * @author paul
+     */
+    public static final String CLI_USE_PERCENTAGE = "per";
+
     public static final String ARG_LIST = "ARG_LIST";
     public static final String ARG_LIST_SEP = ",";
 
@@ -385,6 +393,14 @@ public class CommandLineConfigSource extends ConfigSource {
                 .desc("Threshold for relevant matching pairs, default 0.5.")
                 .hasArg(true)
                 .argName("percentage")
+                .build();
+
+        options.addOption(o);
+
+        o = Option.builder(CLI_USE_PERCENTAGE)
+                .longOpt("use-percentage")
+                .desc("Use percentage as matching pair score, default off (i.e., use relevance).")
+                .hasArg(false)
                 .build();
 
         options.addOption(o);

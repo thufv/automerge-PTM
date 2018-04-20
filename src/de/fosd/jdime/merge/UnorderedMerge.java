@@ -44,7 +44,7 @@ public class UnorderedMerge<T extends Artifact<T>> extends BasicMerge<T> impleme
             return;
         }
 
-        Optional<T> p = left.getPair();
+        Optional<T> p = left.getProperMatch(r, context);
         if (p.isPresent()) { // 2) match with `paired`
             T paired = p.get();
             twoOrThreeWayMerge(left, paired, target, b, context);
@@ -84,8 +84,6 @@ public class UnorderedMerge<T extends Artifact<T>> extends BasicMerge<T> impleme
 
         List<T> leftList = left.getChildren();
         List<T> rightList = right.getChildren();
-
-        pair(leftList, rightList, l, r);
 
         Iterator<T> leftIt = leftList.iterator();
         Iterator<T> rightIt = rightList.iterator();

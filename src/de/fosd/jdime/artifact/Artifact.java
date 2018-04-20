@@ -23,24 +23,6 @@
  */
 package de.fosd.jdime.artifact;
 
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import de.fosd.jdime.config.merge.MergeContext;
 import de.fosd.jdime.config.merge.Revision;
 import de.fosd.jdime.matcher.matching.Matching;
@@ -49,6 +31,16 @@ import de.fosd.jdime.stats.StatisticsInterface;
 import de.fosd.jdime.strdump.DumpMode;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
+
+import java.security.MessageDigest;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A generic <code>Artifact</code> that has a tree structure.
@@ -124,20 +116,6 @@ public abstract class Artifact<T extends Artifact<T>> implements Comparable<T>, 
     private String hash;
 
     /**
-     * Whether the artifact has been paired.
-     *
-     * @author paul
-     */
-    private boolean paired;
-
-    /**
-     * The proper match we had paired with, if exists.
-     *
-     * @author paul
-     */
-    private Optional<T> pairedWith;
-
-    /**
      * Constructs a new <code>Artifact</code>.
      *
      * @param rev    the <code>Revision</code> for the <code>Artifact</code>
@@ -175,8 +153,6 @@ public abstract class Artifact<T extends Artifact<T>> implements Comparable<T>, 
         this.merged = toCopy.merged;
         this.revision = toCopy.revision;
         this.number = toCopy.number;
-        this.paired = toCopy.paired;
-        this.pairedWith = toCopy.pairedWith;
     }
 
     /**
@@ -508,6 +484,30 @@ public abstract class Artifact<T extends Artifact<T>> implements Comparable<T>, 
      */
     public Matching<T> getMatching(Revision rev) {
         return matches.get(rev);
+    }
+
+    /**
+     * Returns the proper match in revision `r`.
+     *
+     * @param r  target revision.
+     * @param context merge context.
+     * @return the proper match in revision `r` if exists.
+     * @author paul
+     */
+    public Optional<T> getProperMatch(Revision r, MergeContext context) {
+        Matching<T> m = getMatching(r);
+
+        if (m != null) {
+            double score = context.isUsePercentage() ? m.getPercentage() : m.getRelevance();
+            if (score > context.getThreshold()) return Optional.of(m.getMatchingRevision(r));
+            LOG.info(String.format("Fake match (%s): %s", score, m));
+            if (LOG.isLoggable(Level.FINE)) {
+                System.out.println(m.getLeft().dump(DumpMode.PLAINTEXT_TREE));
+                System.out.println(m.getRight().dump(DumpMode.PLAINTEXT_TREE));
+            }
+        }
+
+        return Optional.empty();
     }
 
     /**
@@ -972,45 +972,5 @@ public abstract class Artifact<T extends Artifact<T>> implements Comparable<T>, 
      */
     public boolean isList() {
         return false;
-    }
-
-    /**
-     * Set the proper match we had paired for this artifact.
-     *
-     * @param artifact the proper match for this artifact.
-     * @author paul
-     */
-    public void setPairedWith(T artifact) {
-        this.paired = true;
-        this.pairedWith = Optional.of(artifact);
-    }
-
-    /**
-     * Set this node as no proper match.
-     *
-     * @author paul
-     */
-    public void setPairedWithNothing() {
-        this.paired = true;
-        this.pairedWith = Optional.empty();
-    }
-
-    /**
-     * Get proper match, may be empty.
-     *
-     * @return the proper match, or empty.
-     */
-    public Optional<T> getPair() {
-        assert paired;
-        return pairedWith;
-    }
-
-    /**
-     * Check if this artifact has been paired.
-     *
-     * @return paired or not.
-     */
-    public boolean isPaired() {
-        return paired;
     }
 }

@@ -26,7 +26,6 @@ package de.fosd.jdime.config.merge;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -223,7 +222,8 @@ public class MergeContext implements Cloneable {
      *
      * @author paul
      */
-    public double threshold;
+    private double threshold;
+    private boolean usePercentage;
 
     private Map<MergeScenario<?>, Throwable> crashes;
 
@@ -295,6 +295,7 @@ public class MergeContext implements Cloneable {
         this.cmMatcherFixRandomPercentage = true;
         this.expected = Optional.empty();
         this.threshold = 0.5;
+        this.usePercentage = false;
     }
 
     /**
@@ -351,6 +352,7 @@ public class MergeContext implements Cloneable {
         this.expected = toCopy.expected;
         this.leftArtifactRoot = toCopy.leftArtifactRoot;
         this.threshold = toCopy.threshold;
+        this.usePercentage = toCopy.usePercentage;
     }
 
     /**
@@ -459,7 +461,10 @@ public class MergeContext implements Cloneable {
         config.getBoolean(USE_MCESUBTREE_MATCHER).ifPresent(this::setUseMCESubtreeMatcher);
 
         // config threshold
-        config.getDouble(CLI_THRESHOLD).ifPresent(this::setThreshold);
+        boolean per = config.getBoolean(CLI_USE_PERCENTAGE).orElse(false);
+        if (per) usePercentage = true;
+        double defaultTh = per ? 0.2 : 0.5;
+        setThreshold(config.getDouble(CLI_THRESHOLD).orElse(defaultTh));
 
         config.get(CLI_LOOKAHEAD, val -> {
             String msg = "Invalid lookahead level '" + val + "'. Must be one of 'off', 'full' or a non-negative integer.";
@@ -1100,6 +1105,10 @@ public class MergeContext implements Cloneable {
 
     public double getThreshold() {
         return threshold;
+    }
+
+    public boolean isUsePercentage() {
+        return usePercentage;
     }
 
     /**
