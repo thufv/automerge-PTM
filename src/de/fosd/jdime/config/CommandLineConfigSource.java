@@ -137,28 +137,12 @@ public class CommandLineConfigSource extends ConfigSource {
     public static final String CLI_MAPPER_3 = "M3";
 
     /**
-     * Enable original ordered merge algorithm.
-     * -oo, --original-ordered
+     * Threshold for relevant matching pair.
+     * -th, --threshold
      *
      * @author paul
      */
-    public static final String CLI_ORI_ORDERED = "or";
-
-    /**
-     * Enable original unordered merge algorithm.
-     * -ou, --original-unordered
-     *
-     * @author paul
-     */
-    public static final String CLI_ORI_UNORDERED = "ou";
-
-    /**
-     * Likelihood for unordered merge algorithm.
-     * -l, --likelihood
-     *
-     * @author paul
-     */
-    public static final String CLI_LIKELIHOOD = "l";
+    public static final String CLI_THRESHOLD = "th";
 
     public static final String ARG_LIST = "ARG_LIST";
     public static final String ARG_LIST_SEP = ",";
@@ -498,37 +482,14 @@ public class CommandLineConfigSource extends ConfigSource {
 
         synthesisOptions.addOption(o);
 
-        options.addOptionGroup(synthesisOptions);
-
-        // Option group for merge algorithm parameters.
-        OptionGroup mergeOptions = new OptionGroup();
-
-        o = Option.builder(CLI_ORI_ORDERED)
-                .longOpt("original-ordered")
-                .desc("Enable original ordered merge.")
-                .hasArg(false)
-                .build();
-
-        mergeOptions.addOption(o);
-
-        o = Option.builder(CLI_ORI_UNORDERED)
-                .longOpt("original-unordered")
-                .desc("Enable original unordered merge.")
-                .hasArg(false)
-                .build();
-
-        mergeOptions.addOption(o);
-
-        o = Option.builder(CLI_LIKELIHOOD)
-                .longOpt("likelihood")
-                .desc("Likelihood lower bound for unordered merge, default 0.1.")
+        o = Option.builder(CLI_THRESHOLD)
+                .longOpt("threshold")
+                .desc("Threshold for relevant matching pairs, default 0.5.")
                 .hasArg(true)
                 .argName("percentage")
                 .build();
 
-        mergeOptions.addOption(o);
-
-        options.addOptionGroup(mergeOptions);
+        options.addOption(o);
 
         return options;
     }

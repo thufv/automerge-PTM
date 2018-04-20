@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static de.fosd.jdime.artifact.Artifacts.copyTree;
-import static de.fosd.jdime.config.CommandLineConfigSource.CLI_LIKELIHOOD;
+import static de.fosd.jdime.config.CommandLineConfigSource.CLI_THRESHOLD;
 import static de.fosd.jdime.config.merge.MergeScenario.BASE;
 
 public class BasicMerge<T extends Artifact<T>> {
@@ -26,7 +26,7 @@ public class BasicMerge<T extends Artifact<T>> {
     protected double likelihood;
 
     public BasicMerge() {
-        likelihood = Main.config.getDouble(CLI_LIKELIHOOD).orElse(0.2);
+        likelihood = Main.config.getDouble(CLI_THRESHOLD).orElse(0.2);
     }
 
     /**

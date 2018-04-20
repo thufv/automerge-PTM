@@ -217,6 +217,14 @@ public class MergeContext implements Cloneable {
     private int lookAhead;
     private Map<KeyEnums.Type, Integer> lookAheads;
 
+    /**
+     * Threshold for relevant matching pair.
+     * If matching similarity > threshold, then they are matched.
+     *
+     * @author paul
+     */
+    public double threshold;
+
     private Map<MergeScenario<?>, Throwable> crashes;
 
     private CMMode cmMatcherMode;
@@ -286,6 +294,7 @@ public class MergeContext implements Cloneable {
         this.cmMatcherParallel = true;
         this.cmMatcherFixRandomPercentage = true;
         this.expected = Optional.empty();
+        this.threshold = 0.5;
     }
 
     /**
@@ -341,6 +350,7 @@ public class MergeContext implements Cloneable {
         this.cmMatcherFixRandomPercentage = toCopy.cmMatcherFixRandomPercentage;
         this.expected = toCopy.expected;
         this.leftArtifactRoot = toCopy.leftArtifactRoot;
+        this.threshold = toCopy.threshold;
     }
 
     /**
@@ -447,6 +457,9 @@ public class MergeContext implements Cloneable {
         });
 
         config.getBoolean(USE_MCESUBTREE_MATCHER).ifPresent(this::setUseMCESubtreeMatcher);
+
+        // config threshold
+        config.getDouble(CLI_THRESHOLD).ifPresent(this::setThreshold);
 
         config.get(CLI_LOOKAHEAD, val -> {
             String msg = "Invalid lookahead level '" + val + "'. Must be one of 'off', 'full' or a non-negative integer.";
@@ -1079,6 +1092,14 @@ public class MergeContext implements Cloneable {
      */
     public void setLookAhead(int lookAhead) {
         this.lookAhead = lookAhead;
+    }
+
+    public void setThreshold(double threshold) {
+        this.threshold = threshold;
+    }
+
+    public double getThreshold() {
+        return threshold;
     }
 
     /**
