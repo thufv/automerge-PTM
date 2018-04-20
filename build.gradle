@@ -33,7 +33,6 @@ plugins {
     id "org.ajoberstar.grgit" version "2.1.0"
     id "com.github.hierynomus.license" version "0.14.0"
     id "com.scuilion.syntastic" version "0.3.8"
-    id 'scala'
 }
 
 tasks.withType(JavaCompile) {
@@ -46,11 +45,8 @@ javadoc {
 
 sourceSets {
     main {
-        scala {
-            srcDir 'src'
-        }
         java {
-            srcDirs = []
+            srcDir 'src'
         }
         resources {
             srcDir 'res'
@@ -81,8 +77,6 @@ dependencies {
     compile project(':JNativeMerge')
     compile files('lib/extendj.jar')
     testCompile 'junit:junit:4.12'
-
-    compile 'org.scala-lang:scala-library:2.12.4'
 }
 
 task wrapper(type: Wrapper) {
@@ -208,7 +202,7 @@ task getTestFiles {
 
         if (grgit.resolve.toBranch(testFilesBranchName) == null) {
             grgit.branch.add(name: testFilesBranchName, startPoint: "origin/$testFilesBranchName",
-                             mode: BranchAddOp.Mode.TRACK)
+                    mode: BranchAddOp.Mode.TRACK)
         }
 
         def status = grgit.branch.status(name: testFilesBranchName)
@@ -236,4 +230,16 @@ test.dependsOn getTestFiles
 
 compileJava {
     options.compilerArgs << "-Xlint:all"
+}
+
+def version = '1.0'
+
+task buildJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Version': version,
+                'Main-Class': 'de.fosd.jdime.Main'
+    }
+    baseName = 'automerge'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }

@@ -23,30 +23,22 @@
  */
 package de.fosd.jdime.artifact.ast;
 
-import de.fosd.jdime.Main;
 import de.fosd.jdime.artifact.Artifact;
 import de.fosd.jdime.artifact.ArtifactList;
 import de.fosd.jdime.artifact.Artifacts;
 import de.fosd.jdime.artifact.file.FileArtifact;
-import de.fosd.jdime.config.JDimeConfig;
 import de.fosd.jdime.config.merge.MergeContext;
 import de.fosd.jdime.config.merge.MergeScenario;
 import de.fosd.jdime.config.merge.Revision;
 import de.fosd.jdime.execption.AbortException;
-import de.fosd.jdime.matcher.Matcher;
-import de.fosd.jdime.matcher.matching.Color;
-import de.fosd.jdime.matcher.matching.Matchings;
 import de.fosd.jdime.merge.Merge;
 import de.fosd.jdime.operations.ConflictOperation;
 import de.fosd.jdime.operations.MergeOperation;
 import de.fosd.jdime.operations.Operation;
 import de.fosd.jdime.stats.KeyEnums;
 import de.fosd.jdime.stats.MergeScenarioStatistics;
-import javafx.util.Pair;
 import org.extendj.ast.*;
-import synthesis.SynthesisContext;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
@@ -55,11 +47,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static de.fosd.jdime.config.CommandLineConfigSource.CLI_MAPPER_1;
-import static de.fosd.jdime.config.CommandLineConfigSource.CLI_TOP_K;
 import static de.fosd.jdime.strdump.DumpMode.PLAINTEXT_TREE;
-import static de.fosd.jdime.util.SuccessLevel.SUCCESS;
-import static java.util.logging.Level.SEVERE;
 
 /**
  * @author Olaf Lessenich
@@ -693,225 +681,6 @@ public class ASTNodeArtifact extends Artifact<ASTNodeArtifact> {
         System.out.println(right.prettyPrint());
         System.out.println("--- base ---");
         System.out.println(base.prettyPrint());
-    }
-
-    /**
-     * Solve conflicts with synthesis.
-     *
-     * @param nodes    conflict nodes
-     * @param context  merge context
-     * @param scenario merge scenario
-     */
-    public void solveConflicts(List<ASTNodeArtifact> nodes,
-                               MergeContext context, MergeScenario<FileArtifact> scenario) {
-        JDimeConfig config = Main.config;
-        int maxK = config.getInteger(CLI_TOP_K).orElse(32);
-
-        Optional<FileArtifact> expFile = context.getExpected(scenario);
-        if (expFile.isPresent()) {
-            FileArtifact expected = expFile.get();
-            ASTNodeArtifact expAST = new ASTNodeArtifact(expected);
-
-            Matcher<ASTNodeArtifact> matcher = new Matcher<>(this, expAST);
-            Matchings<ASTNodeArtifact> matchings = matcher.match(context, Color.GREEN);
-
-            int num = 0;
-            for (ASTNodeArtifact node : nodes) {
-                num++;
-
-                File holeFile = new File(expected.getFile().getAbsolutePath() + ".hole" + num);
-                ASTNodeArtifact exp = null;
-                if (holeFile.exists()) { // check using hole file
-                    exp = new InternalASTNode(holeFile);
-                    LOG.info("Synthesis: Check using hole file: " + holeFile);
-                } else {
-                    Optional<ASTNodeArtifact> expRootOpt = matchings.queryRightByLeftId(node.getParent().getId());
-                    if (!expRootOpt.isPresent()) {
-                        LOG.severe("Synthesis: Expected answer is missing in: " +
-                                expected.getFile().getAbsolutePath());
-                        System.out.println(node.getParent().dump(PLAINTEXT_TREE));
-                        return;
-                    }
-
-                    ASTNodeArtifact expRoot = expRootOpt.get();
-                    int index = node.getParent().indexOf(node);
-                    if (index >= expRoot.getNumChildren()) {
-                        LOG.severe("Synthesis: Expected child (#" + index + ") is missing in: " +
-                                expected.getFile().getAbsolutePath());
-                        System.out.println(expRoot.dump(PLAINTEXT_TREE));
-                        System.out.println();
-                        System.out.println(node.getParent().dump(PLAINTEXT_TREE));
-                        return;
-                    }
-
-                    exp = node.isList() ?
-                            expRoot.wrapListArtifact(index, node) :
-                            expRoot.getChild(index);
-                }
-
-                assert exp != null;
-
-                LOG.info("Synthesis: Expected");
-                if (LOG.isLoggable(Level.INFO)) {
-                    System.out.println(exp.prettyPrint());
-                }
-
-                int depth = 2;
-                int k = 0;
-                int totalSteps = 0;
-                boolean found = false;
-
-                long startTime = System.currentTimeMillis();
-
-                if (node.left.isEmptyArtifact()) { // special case: left is empty
-                    LOG.info("Synthesis: Left artifact is empty");
-
-                    k = 1;
-                    totalSteps = 1;
-                    LOG.fine("Synthesis: Check 1: <empty>");
-
-                    if (exp.eq(node.left)) {
-                        found = true;
-                    } else {
-                        k = 2;
-                        totalSteps = 2;
-                        LOG.fine("Synthesis: Check 2:\n" + node.right.prettyPrint());
-
-                        if (exp.eq(node.right)) {
-                            found = true;
-                        }
-                    }
-                } else if (node.right.isEmptyArtifact()) { // special case: right is empty
-                    LOG.info("Synthesis: Right artifact is empty");
-
-                    k = 1;
-                    totalSteps = 1;
-                    LOG.fine("Synthesis: Check 1: <empty>");
-
-                    if (exp.eq(node.right)) {
-                        found = true;
-                    } else {
-                        k = 2;
-                        totalSteps = 2;
-                        LOG.fine("Synthesis: Check 2:\n" + node.left.prettyPrint());
-
-                        if (exp.eq(node.left)) {
-                            found = true;
-                        }
-                    }
-                } else { // normal case
-                    while (depth < 5) {
-                        SynthesisContext ctx = new SynthesisContext(node.left, node.right, node.base, LOG, depth);
-                        Pair<Boolean, Integer> ret = ctx.check(exp, maxK);
-                        found = ret.getKey();
-                        k = ret.getValue();
-                        totalSteps += k;
-                        if (found) {
-                            found = true;
-                            break;
-                        } else {
-                            depth++;
-                        }
-                    }
-                }
-
-                long runtime = System.currentTimeMillis() - startTime;
-
-                LOG.info("Synthesis: Searched depth: " + depth);
-                LOG.info("Synthesis: Searched total steps: " + totalSteps);
-                if (found) {
-                    LOG.log(SUCCESS, "Synthesis: FOUND");
-                } else {
-                    LOG.log(SEVERE, "Synthesis: NOT FOUND");
-                }
-                LOG.info(String.format("Synthesis time: %d ms.", runtime));
-            }
-        } else {
-            for (ASTNodeArtifact node : nodes) {
-                SynthesisContext ctx = new SynthesisContext(node.left, node.right, node.base, LOG, 2);
-                ctx.take(maxK);
-            }
-        }
-    }
-
-    /**
-     * Take children starting at index `from` and form a new ASTNodeArtifact.
-     *
-     * @param from starting index
-     * @param src  source artifact
-     * @return the wrapped ASTNodeArtifact
-     */
-    public ASTNodeArtifact wrapListArtifact(int from, ASTNodeArtifact src) {
-        ASTNodeArtifact dst = src.copy();
-        dst.clearChildren();
-        for (int i = from; i < getNumChildren(); i++) {
-            dst.addChild(getChild(i));
-        }
-
-        return dst;
-    }
-
-    private boolean root = false;
-
-    public void setRoot() {
-        root = true;
-    }
-
-    public boolean isRoot() {
-        return root;
-    }
-
-    public final boolean isLeaf() {
-        return getChildren().isEmpty();
-    }
-
-    public final boolean isLeafNode() {
-        if (astnode instanceof Dot) return true;
-        if (astnode instanceof AssignSimpleExpr) return true;
-
-        return isLeaf();
-    }
-
-    private String shortName() {
-        return astnode.getClass().getName().substring(16);
-    }
-
-    /**
-     * Get kind name.
-     *
-     * @return
-     * @author paul
-     */
-    public String kind(String parentName) {
-        // Special case: the method name of `MethodAccess` is excluded in children, instead,
-        // we get it by calling `this.getId()`.
-        if (astnode instanceof MethodAccess) {
-            MethodAccess m = (MethodAccess) astnode;
-            return shortName() + "." + m.getID();
-        }
-
-        if (Main.config.getBoolean(CLI_MAPPER_1).orElse(true)) {
-            if (astnode instanceof Block || astnode instanceof org.extendj.ast.List) {
-                return parentName + "." + shortName();
-            }
-        }
-
-        return shortName();
-    }
-
-    public String[] abstractArgumentNames(String parentName) {
-        if (isList()) {
-            String[] names = new String[1];
-            names[0] = kind(parentName) + ".arg.list";
-            return names;
-        }
-
-        int n = getNumChildren();
-        String[] names = new String[n];
-        for (int i = 0; i < n; i++) {
-            names[i] = kind(parentName) + ".arg" + i;
-        }
-        return names;
     }
 
     public boolean eq(ASTNodeArtifact that) {

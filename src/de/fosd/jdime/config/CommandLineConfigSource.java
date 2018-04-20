@@ -89,54 +89,6 @@ public class CommandLineConfigSource extends ConfigSource {
     public static final String CLI_TMP_FOLDER = "t";
 
     /**
-     * Apply synthesis when conflicts occur.
-     * -s, --synthesis
-     *
-     * @author paul
-     */
-    public static final String CLI_SYNTHESIS = "S";
-
-    /**
-     * Top `k`.
-     * -K, --top-k
-     *
-     * @author paul
-     */
-    public static final String CLI_TOP_K = "K";
-
-    /**
-     * Disable ranking.
-     * -noR, --no-ranking
-     *
-     * @author paul
-     */
-    public static final String CLI_NO_RANKING = "noR";
-
-    /**
-     * Mapper 1.
-     * -M1, --mapper-1
-     *
-     * @author paul
-     */
-    public static final String CLI_MAPPER_1 = "M1";
-
-    /**
-     * Mapper 2.
-     * -M2, --mapper-2
-     *
-     * @author paul
-     */
-    public static final String CLI_MAPPER_2 = "M2";
-
-    /**
-     * Mapper 3.
-     * -M3, --mapper-3
-     *
-     * @author paul
-     */
-    public static final String CLI_MAPPER_3 = "M3";
-
-    /**
      * Threshold for relevant matching pair.
      * -th, --threshold
      *
@@ -427,60 +379,6 @@ public class CommandLineConfigSource extends ConfigSource {
                 .build();
 
         options.addOption(o);
-
-        o = Option.builder(CLI_SYNTHESIS)
-                .longOpt("synthesis")
-                .desc("Enable systhesis when conflicts occur.")
-                .hasArg(false)
-                .build();
-
-        options.addOption(o);
-
-        // Option group for synthesis parameters.
-        OptionGroup synthesisOptions = new OptionGroup();
-
-        o = Option.builder(CLI_TOP_K)
-                .longOpt("top-k")
-                .desc("Check top k ranked programs in systhesis phase, default 32.")
-                .hasArg(true)
-                .build();
-
-        synthesisOptions.addOption(o);
-
-        o = Option.builder(CLI_NO_RANKING)
-                .longOpt("no-ranking")
-                .desc("Disable ranking.")
-                .hasArg(false)
-                .build();
-
-        synthesisOptions.addOption(o);
-
-        o = Option.builder(CLI_MAPPER_1)
-                .longOpt("mapper-1")
-                .desc("Enable mapper 1.")
-                .hasArg(true)
-                .argName("on|off")
-                .build();
-
-        synthesisOptions.addOption(o);
-
-        o = Option.builder(CLI_MAPPER_2)
-                .longOpt("mapper-2")
-                .desc("Enable mapper 2.")
-                .hasArg(true)
-                .argName("on|off")
-                .build();
-
-        synthesisOptions.addOption(o);
-
-        o = Option.builder(CLI_MAPPER_3)
-                .longOpt("mapper-3")
-                .desc("Enable mapper 3.")
-                .hasArg(true)
-                .argName("on|off")
-                .build();
-
-        synthesisOptions.addOption(o);
 
         o = Option.builder(CLI_THRESHOLD)
                 .longOpt("threshold")

@@ -23,35 +23,10 @@
  */
 package de.fosd.jdime.artifact.file;
 
-import javax.activation.MimetypesFileTypeMap;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.IntStream;
-
-import de.fosd.jdime.Main;
 import de.fosd.jdime.artifact.Artifact;
 import de.fosd.jdime.artifact.ArtifactList;
 import de.fosd.jdime.artifact.Artifacts;
 import de.fosd.jdime.artifact.ast.ASTNodeArtifact;
-import de.fosd.jdime.config.JDimeConfig;
 import de.fosd.jdime.config.merge.MergeContext;
 import de.fosd.jdime.config.merge.MergeScenario;
 import de.fosd.jdime.config.merge.Revision;
@@ -69,12 +44,27 @@ import de.fosd.jdime.stats.MergeScenarioStatistics;
 import de.fosd.jdime.stats.StatisticsInterface;
 import de.fosd.jdime.strategy.LinebasedStrategy;
 import de.fosd.jdime.strategy.MergeStrategy;
-import de.fosd.jdime.strdump.DumpMode;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.CompositeFileComparator;
 
-import static de.fosd.jdime.config.CommandLineConfigSource.CLI_SYNTHESIS;
+import javax.activation.MimetypesFileTypeMap;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.IntStream;
+
 import static de.fosd.jdime.stats.MergeScenarioStatus.FAILED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.logging.Level.INFO;
@@ -715,19 +705,6 @@ public class FileArtifact extends Artifact<FileArtifact> {
                             }
                         }
                     });
-
-                    if (Main.config.getBoolean(CLI_SYNTHESIS).orElse(false)) { // synthesis
-                        try {
-                            operation.targetCache.solveConflicts(nodes, context, scenario);
-                        } catch (Throwable e) {
-                            LOG.log(SEVERE, e, () -> {
-                                String ls = System.lineSeparator();
-                                String scStr = scenario.toString(ls, true);
-                                return String.format("Exception while synthesizing%n%s", scStr);
-                            });
-                            e.printStackTrace();
-                        }
-                    }
                 } catch (Throwable e) {
                     if (context.hasStatistics()) {
                         context.getStatistics().getScenarioStatistics(scenario).setStatus(FAILED);
