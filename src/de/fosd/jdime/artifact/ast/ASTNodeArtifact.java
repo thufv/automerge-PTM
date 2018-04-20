@@ -669,6 +669,15 @@ public class ASTNodeArtifact extends Artifact<ASTNodeArtifact> {
         return nodes;
     }
 
+    public void markConflicts() {
+        if (isConflict()) {
+            System.out.println(this.astnode.prettyPrint());
+        }
+        for (ASTNodeArtifact child : getChildren()) {
+            child.markConflicts();
+        }
+    }
+
     /**
      * Print conflict (if this artifact has conflict).
      *

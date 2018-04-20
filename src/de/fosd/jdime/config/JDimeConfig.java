@@ -1,25 +1,25 @@
 /**
  * Copyright (C) 2013-2014 Olaf Lessenich
  * Copyright (C) 2014-2017 University of Passau, Germany
- *
+ * <p>
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- *
+ * <p>
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
- *
+ * <p>
  * Contributors:
- *     Olaf Lessenich <lessenic@fim.uni-passau.de>
- *     Georg Seibt <seibt@fim.uni-passau.de>
+ * Olaf Lessenich <lessenic@fim.uni-passau.de>
+ * Georg Seibt <seibt@fim.uni-passau.de>
  */
 package de.fosd.jdime.config;
 
@@ -31,6 +31,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import de.fosd.jdime.Checker;
 import de.fosd.jdime.Main;
 import de.fosd.jdime.artifact.file.FileArtifact;
 import de.fosd.jdime.matcher.ordered.mceSubtree.MCESubtreeMatcher;
@@ -203,7 +204,7 @@ public final class JDimeConfig extends Config {
      */
     public JDimeConfig() {
         try {
-            addConfigSources(new String[] {});
+            addConfigSources(new String[]{});
         } catch (ParseException ignored) {
             // the ParseException will not be thrown for an empty arguments array
         }
@@ -242,7 +243,7 @@ public final class JDimeConfig extends Config {
         get(CLI_LOG_LEVEL).ifPresent(JDimeConfig::setLogLevel);
 
         // set temp folder
-        get(CLI_TMP_FOLDER).ifPresent(tf -> FileArtifact.TMP_FOLDER = tf);
+        get(CLI_TMP_FOLDER).ifPresent(tf -> Checker.TMP_FOLDER = tf);
     }
 
     /**
