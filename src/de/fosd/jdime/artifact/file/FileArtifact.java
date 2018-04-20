@@ -49,6 +49,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.CompositeFileComparator;
 import org.apache.commons.math3.util.Pair;
+import org.omg.PortableInterceptor.SUCCESSFUL;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
@@ -69,6 +70,7 @@ import java.util.stream.IntStream;
 
 import static de.fosd.jdime.Checker.TMP_FOLDER;
 import static de.fosd.jdime.stats.MergeScenarioStatus.FAILED;
+import static de.fosd.jdime.util.SuccessLevel.SUCCESS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.logging.Level.SEVERE;
 import static org.apache.commons.io.comparator.DirectoryFileComparator.DIRECTORY_COMPARATOR;
@@ -644,16 +646,11 @@ public class FileArtifact extends Artifact<FileArtifact> {
                     }
 
                     context.getExpected(scenario).ifPresent(exp -> {
-                        FileArtifact target = operation.getTarget();
-                        try {
-                            target.writeContent();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        FileArtifact target = operation.getTarget().createTmpFileArtifact();
 
                         Pair<Boolean, Float> p = Checker.check(exp, target, hasConflict);
                         if (p.getFirst()) { // fully matched
-                            LOG.fine("Check: FULLY MATCHED");
+                            LOG.log(SUCCESS, "Check: FULLY MATCHED");
                         } else {
                             if (!hasConflict) {// perhaps expected is wrong
                                 ASTNodeArtifact base = scenario.getBase().createASTNodeArtifact(MergeScenario.BASE);
@@ -661,15 +658,27 @@ public class FileArtifact extends Artifact<FileArtifact> {
                                 ASTNodeArtifact right = scenario.getRight().createASTNodeArtifact(MergeScenario.RIGHT);
                                 ASTNodeArtifact tar = target.createASTNodeArtifact(MergeScenario.TARGET);
 
-                                // case 1: base = left, then right = target
-                                if (Checker.astEqual(base, left) && Checker.astEqual(right, tar)) {
-                                    LOG.warning("Check: FULLY MATCHED using right as expected");
+                                // case 1: base = left, then right as expected
+                                if (Checker.astEqual(base, left)) {
+                                    LOG.warning("Check: Using right as expected");
+                                    Pair<Boolean, Float> p1 = Checker.check(tar, right);
+                                    if (p1.getFirst()) { // fully matched
+                                        LOG.log(SUCCESS, "Check: FULLY MATCHED");
+                                    } else {
+                                        LOG.severe(String.format("Check: NOT MATCHED: %f", p1.getSecond()));
+                                    }
                                     return;
                                 }
 
-                                // case 2: base = right, then left = target
-                                if (Checker.astEqual(base, right) && Checker.astEqual(left, tar)) {
-                                    LOG.warning("Check: FULLY MATCHED using left as expected");
+                                // case 2: base = right, then left as expected
+                                if (Checker.astEqual(base, right)) {
+                                    LOG.warning("Check: Using left as expected");
+                                    Pair<Boolean, Float> p1 = Checker.check(tar, left);
+                                    if (p1.getFirst()) { // fully matched
+                                        LOG.log(SUCCESS, "Check: FULLY MATCHED");
+                                    } else {
+                                        LOG.severe(String.format("Check: NOT MATCHED: %f", p1.getSecond()));
+                                    }
                                     return;
                                 }
                             }
@@ -792,6 +801,22 @@ public class FileArtifact extends Artifact<FileArtifact> {
         }
 
         return new ASTNodeArtifact(new FileArtifact(revision, file));
+    }
+
+    public FileArtifact createTmpFileArtifact() {
+        assert isFile() && content != null;
+
+        Path path = Paths.get(TMP_FOLDER, "AutoMerge.Tmp.Out.java");
+        File file = path.toFile();
+        try {
+            OutputStreamWriter out = new OutputStreamWriter(FileUtils.openOutputStream(file), UTF_8);
+            out.write(content);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return new FileArtifact(MergeScenario.TARGET, file);
     }
 
     /**

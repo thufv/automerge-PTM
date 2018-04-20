@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static de.fosd.jdime.artifact.file.FileArtifact.*;
+import static de.fosd.jdime.util.SuccessLevel.SUCCESS;
 
 public class Checker {
 
@@ -123,18 +124,22 @@ public class Checker {
 
         Pair<Boolean, Float> p = check(exp, tar, hasConflict);
         if (p.getFirst()) { // fully matched
-            LOG.fine("Check: FULLY MATCHED");
+            LOG.log(SUCCESS, "Check: FULLY MATCHED");
         } else {
             LOG.severe(String.format("Check: NOT MATCHED: %f", p.getSecond()));
         }
     }
 
-    public static boolean astEqual(ASTNodeArtifact ast1, ASTNodeArtifact ast2) {
+    public static Pair<Boolean, Float> check(ASTNodeArtifact ast1, ASTNodeArtifact ast2) {
         MergeContext context = new MergeContext();
 
         // diff ast1 ast2
         Matcher<ASTNodeArtifact> matcher = new Matcher<>(ast1, ast2);
         Matching<ASTNodeArtifact> m = matcher.match(context, Color.BLUE).get(ast1, ast2).get();
-        return m.hasFullyMatched();
+        return Pair.create(m.hasFullyMatched(), m.getPercentage());
+    }
+
+    public static boolean astEqual(ASTNodeArtifact ast1, ASTNodeArtifact ast2) {
+        return check(ast1, ast2).getFirst();
     }
 }
