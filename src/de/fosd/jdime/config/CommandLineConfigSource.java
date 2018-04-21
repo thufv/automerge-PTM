@@ -104,6 +104,14 @@ public class CommandLineConfigSource extends ConfigSource {
      */
     public static final String CLI_USE_PERCENTAGE = "per";
 
+    /**
+     * Check the similarity of two versions.
+     * -ch, --check-only
+     *
+     * @author paul
+     */
+    public static final String CLI_CHECK_ONLY = "ch";
+
     public static final String ARG_LIST = "ARG_LIST";
     public static final String ARG_LIST_SEP = ",";
 
@@ -400,6 +408,14 @@ public class CommandLineConfigSource extends ConfigSource {
         o = Option.builder(CLI_USE_PERCENTAGE)
                 .longOpt("use-percentage")
                 .desc("Use percentage as matching pair score, default off (i.e., use relevance).")
+                .hasArg(false)
+                .build();
+
+        options.addOption(o);
+
+        o = Option.builder(CLI_CHECK_ONLY)
+                .longOpt("check-only")
+                .desc("Only check the similarity of two versions.")
                 .hasArg(false)
                 .build();
 

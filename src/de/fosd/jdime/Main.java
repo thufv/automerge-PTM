@@ -152,6 +152,28 @@ public final class Main {
             return;
         }
 
+        if (context.isCheckOnly()) {
+            FileArtifact expected = inputFiles.get(0);
+            FileArtifact target = inputFiles.get(1);
+
+            if (!expected.exists()) {
+                throw new AbortException("Expected artifact not exist: " + expected);
+            }
+            if (!expected.isFile()) {
+                throw new AbortException("Expected artifact is not a file: " + expected);
+            }
+
+            if (!target.exists()) {
+                throw new AbortException("Target artifact not exist: " + target);
+            }
+            if (!target.isFile()) {
+                throw new AbortException("Target artifact is not a file: " + target);
+            }
+
+            Checker.applyCheck(expected, target);
+            return;
+        }
+
         try {
             merge(context);
             output(context);

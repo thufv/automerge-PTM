@@ -113,6 +113,8 @@ public class MergeContext implements Cloneable {
      */
     private boolean diffOnly;
 
+    private boolean checkOnly;
+
     /**
      * Whether to treat two input versions as consecutive versions in the revision history.
      */
@@ -296,6 +298,7 @@ public class MergeContext implements Cloneable {
         this.expected = Optional.empty();
         this.threshold = 0.5;
         this.usePercentage = false;
+        this.checkOnly = false;
     }
 
     /**
@@ -353,6 +356,7 @@ public class MergeContext implements Cloneable {
         this.leftArtifactRoot = toCopy.leftArtifactRoot;
         this.threshold = toCopy.threshold;
         this.usePercentage = toCopy.usePercentage;
+        this.checkOnly = toCopy.checkOnly;
     }
 
     /**
@@ -457,6 +461,10 @@ public class MergeContext implements Cloneable {
             setDiffOnly(diffOnly);
             config.getBoolean(CLI_CONSECUTIVE).ifPresent(this::setConsecutive);
         });
+
+        if (config.getBoolean(CLI_CHECK_ONLY).isPresent()) {
+            setCheckOnly();
+        }
 
         config.getBoolean(USE_MCESUBTREE_MATCHER).ifPresent(this::setUseMCESubtreeMatcher);
 
@@ -726,7 +734,7 @@ public class MergeContext implements Cloneable {
                     }
                 }
                 setOutputFile(new FileArtifact(MergeScenario.MERGE, outFile, false));
-            } else if (!(getDumpMode() != DumpMode.NONE || isInspect())) {
+            } else if (!(getDumpMode() != DumpMode.NONE || isInspect() || isCheckOnly())) {
                 throw new AbortException("Not output file or directory given.");
             }
         }
@@ -839,6 +847,14 @@ public class MergeContext implements Cloneable {
      */
     public void setDiffOnly(boolean diffOnly) {
         this.diffOnly = diffOnly;
+    }
+
+    public boolean isCheckOnly() {
+        return checkOnly;
+    }
+
+    public void setCheckOnly() {
+        this.checkOnly = true;
     }
 
     /**

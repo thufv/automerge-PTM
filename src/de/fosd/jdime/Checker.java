@@ -128,16 +128,15 @@ public class Checker {
                 Pair.create(unMatchedRate, unMatched));
     }
 
-    public static void applyCheck(String expected, String target) {
-        FileArtifact exp = new FileArtifact(MergeContext.EXPECTED, new File(expected));
-        FileArtifact tar = new FileArtifact(MergeScenario.TARGET, new File(target));
-        boolean hasConflict = tar.getContent().contains(CONFLICT_START);
+    public static void applyCheck(FileArtifact expected, FileArtifact target) {
+        expected.setRevision(MergeContext.EXPECTED);
+        target.setRevision(MergeScenario.TARGET);
 
+        boolean hasConflict = target.getContent().contains(CONFLICT_START);
         if (hasConflict) {
-            LOG.warning("Check: Output has conflict: " + tar.getFile().getAbsolutePath());
+            LOG.warning("Check: Output has conflict: " + target.getFile().getAbsolutePath());
         }
-
-        showCheckResult(check(exp, tar, hasConflict));
+        showCheckResult(check(expected, target, hasConflict));
     }
 
     public static void showCheckResult(Pair<Boolean, Pair<Double, Integer>> p) {
