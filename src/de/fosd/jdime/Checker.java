@@ -28,7 +28,8 @@ public class Checker {
 
     public static String TMP_FOLDER = "/tmp";
 
-    public static Pair<Boolean, Float> check(FileArtifact expected, FileArtifact target, boolean hasConflict) {
+    public static Pair<Boolean, Pair<Double, Integer>> check(FileArtifact expected, FileArtifact target,
+                                                             boolean hasConflict) {
         MergeContext context = new MergeContext();
         LOG.info("Expected: " + expected.getFile().getAbsolutePath());
         ASTNodeArtifact exp = expected.createASTNodeArtifact(MergeContext.EXPECTED);
@@ -95,14 +96,24 @@ public class Checker {
             // diff exp left
             Matcher<ASTNodeArtifact> matcher1 = new Matcher<>(exp, left);
             Matching<ASTNodeArtifact> m1 = matcher1.match(context, Color.BLUE).get(exp, left).get();
+            int size1 = exp.getTreeSize() + left.getTreeSize();
+            int unMatched1 = size1 - 2 * m1.getScore();
+            double unMatchedRate1 = (double) unMatched1 / size1;
 
             // diff exp right
             Matcher<ASTNodeArtifact> matcher2 = new Matcher<>(exp, right);
             Matching<ASTNodeArtifact> m2 = matcher2.match(context, Color.BLUE).get(exp, right).get();
+            int size2 = exp.getTreeSize() + right.getTreeSize();
+            int unMatched2 = size2 - 2 * m2.getScore();
+            double unMatchedRate2 = (double) unMatched2 / size2;
 
-            LOG.fine(String.format("Check: left matcher = %f, right matcher = %f",
-                    m1.getPercentage(), m2.getPercentage()));
-            return Pair.create(false, Math.min(m1.getPercentage(), m2.getPercentage()));
+            LOG.fine(String.format("Check: left matcher = %f (%d/%d), right matcher = %f (%d/%d)",
+                    unMatchedRate1, unMatched1, exp.getTreeSize(), unMatchedRate2, unMatched2, exp.getTreeSize()));
+            return Pair.create(
+                    false,
+                    unMatchedRate1 > unMatchedRate2 ? Pair.create(unMatchedRate1, unMatched1) :
+                            Pair.create(unMatchedRate2, unMatched2)
+            );
         }
 
         ASTNodeArtifact tar = target.createASTNodeArtifact(MergeScenario.TARGET);
@@ -110,7 +121,11 @@ public class Checker {
         // diff exp tar
         Matcher<ASTNodeArtifact> matcher = new Matcher<>(tar, exp);
         Matching<ASTNodeArtifact> m = matcher.match(context, Color.BLUE).get(tar, exp).get();
-        return Pair.create(m.hasFullyMatched(), m.getPercentage());
+        int size = exp.getTreeSize() + tar.getTreeSize();
+        int unMatched = size - 2 * m.getScore();
+        double unMatchedRate = (double) unMatched / size;
+        return Pair.create(m.hasFullyMatched(),
+                Pair.create(unMatchedRate, unMatched));
     }
 
     public static void applyCheck(String expected, String target) {
@@ -122,21 +137,29 @@ public class Checker {
             LOG.warning("Check: Output has conflict: " + tar.getFile().getAbsolutePath());
         }
 
-        Pair<Boolean, Float> p = check(exp, tar, hasConflict);
+        showCheckResult(check(exp, tar, hasConflict));
+    }
+
+    public static void showCheckResult(Pair<Boolean, Pair<Double, Integer>> p) {
         if (p.getFirst()) { // fully matched
             LOG.log(SUCCESS, "Check: FULLY MATCHED");
         } else {
-            LOG.severe(String.format("Check: NOT MATCHED: %f", p.getSecond()));
+            LOG.severe(String.format("Check: NOT MATCHED: %f (%d unmatched)",
+                    p.getSecond().getFirst(), p.getSecond().getSecond()));
         }
     }
 
-    public static Pair<Boolean, Float> check(ASTNodeArtifact ast1, ASTNodeArtifact ast2) {
+    public static Pair<Boolean, Pair<Double, Integer>> check(ASTNodeArtifact tar, ASTNodeArtifact exp) {
         MergeContext context = new MergeContext();
 
         // diff ast1 ast2
-        Matcher<ASTNodeArtifact> matcher = new Matcher<>(ast1, ast2);
-        Matching<ASTNodeArtifact> m = matcher.match(context, Color.BLUE).get(ast1, ast2).get();
-        return Pair.create(m.hasFullyMatched(), m.getPercentage());
+        Matcher<ASTNodeArtifact> matcher = new Matcher<>(tar, exp);
+        Matching<ASTNodeArtifact> m = matcher.match(context, Color.BLUE).get(tar, exp).get();
+        int size = exp.getTreeSize() + tar.getTreeSize();
+        int unMatched = size - 2 * m.getScore();
+        double unMatchedRate = (double) unMatched / size;
+        return Pair.create(m.hasFullyMatched(),
+                Pair.create(unMatchedRate, unMatched));
     }
 
     public static boolean astEqual(ASTNodeArtifact ast1, ASTNodeArtifact ast2) {

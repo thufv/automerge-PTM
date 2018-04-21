@@ -648,9 +648,9 @@ public class FileArtifact extends Artifact<FileArtifact> {
                     context.getExpected(scenario).ifPresent(exp -> {
                         FileArtifact target = operation.getTarget().createTmpFileArtifact();
 
-                        Pair<Boolean, Float> p = Checker.check(exp, target, hasConflict);
+                        Pair<Boolean, Pair<Double, Integer>> p = Checker.check(exp, target, hasConflict);
                         if (p.getFirst()) { // fully matched
-                            LOG.log(SUCCESS, "Check: FULLY MATCHED");
+                            Checker.showCheckResult(p);
                         } else {
                             if (!hasConflict) {// perhaps expected is wrong
                                 ASTNodeArtifact base = scenario.getBase().createASTNodeArtifact(MergeScenario.BASE);
@@ -661,30 +661,20 @@ public class FileArtifact extends Artifact<FileArtifact> {
                                 // case 1: base = left, then right as expected
                                 if (Checker.astEqual(base, left)) {
                                     LOG.warning("Check: Using right as expected");
-                                    Pair<Boolean, Float> p1 = Checker.check(tar, right);
-                                    if (p1.getFirst()) { // fully matched
-                                        LOG.log(SUCCESS, "Check: FULLY MATCHED");
-                                    } else {
-                                        LOG.severe(String.format("Check: NOT MATCHED: %f", p1.getSecond()));
-                                    }
+                                    Checker.showCheckResult(Checker.check(tar, right));
                                     return;
                                 }
 
                                 // case 2: base = right, then left as expected
                                 if (Checker.astEqual(base, right)) {
                                     LOG.warning("Check: Using left as expected");
-                                    Pair<Boolean, Float> p1 = Checker.check(tar, left);
-                                    if (p1.getFirst()) { // fully matched
-                                        LOG.log(SUCCESS, "Check: FULLY MATCHED");
-                                    } else {
-                                        LOG.severe(String.format("Check: NOT MATCHED: %f", p1.getSecond()));
-                                    }
+                                    Checker.showCheckResult(Checker.check(tar, left));
                                     return;
                                 }
                             }
 
                             // wrong answer, not fully matched
-                            LOG.severe(String.format("Check: NOT MATCHED: %f", p.getSecond()));
+                            Checker.showCheckResult(p);
                         }
                     });
                 } catch (Throwable e) {
