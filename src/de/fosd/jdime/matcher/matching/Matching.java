@@ -248,22 +248,17 @@ public class Matching<T extends Artifact<T>> implements Cloneable, Comparable<Ma
             relevance = 1;
         } else {
             relevance = 0.5;
-            if (left.getNumChildren() == right.getNumChildren()) { // constructed nodes
-                int n = left.getNumChildren();
-
-                double childrenRelevance = 0;
-                for (int i = 0; i < n; i++) {
-                    T leftChild = left.getChild(i);
-                    T rightChild = right.getChild(i);
-                    if (leftChild.matches(rightChild)) {
-                        Matching<T> m = leftChild.getMatching(rightChild.getRevision());
-                        childrenRelevance += m.getRelevance();
-                    }
+            double childrenRelevance = 0;
+            for (int i = 0; i < left.getNumChildren(); i++) {
+                T leftChild = left.getChild(i);
+                Matching<T> m = leftChild.getMatching(right.getRevision());
+                if (m != null) {
+                    childrenRelevance += m.getRelevance();
                 }
-                relevance += 0.5 * childrenRelevance / n;
-            } else { // lists
-                relevance += 0.5 * getPercentage();
             }
+
+            int n = Math.max(left.getNumChildren(), right.getNumChildren());
+            relevance += 0.5 * childrenRelevance / n;
         }
 
         relevanceIsCalculated = true;
