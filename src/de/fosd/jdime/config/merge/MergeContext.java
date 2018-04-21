@@ -462,7 +462,7 @@ public class MergeContext implements Cloneable {
             config.getBoolean(CLI_CONSECUTIVE).ifPresent(this::setConsecutive);
         });
 
-        if (config.getBoolean(CLI_CHECK_ONLY).isPresent()) {
+        if (config.getBoolean(CLI_CHECK_ONLY).orElse(false)) {
             setCheckOnly();
         }
 
