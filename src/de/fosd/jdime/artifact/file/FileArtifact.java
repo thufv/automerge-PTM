@@ -34,9 +34,6 @@ import de.fosd.jdime.config.merge.Revision;
 import de.fosd.jdime.config.merge.Revision.SuccessiveNameSupplier;
 import de.fosd.jdime.execption.AbortException;
 import de.fosd.jdime.execption.NotYetImplementedException;
-import de.fosd.jdime.matcher.Matcher;
-import de.fosd.jdime.matcher.matching.Color;
-import de.fosd.jdime.matcher.matching.Matching;
 import de.fosd.jdime.merge.Merge;
 import de.fosd.jdime.operations.MergeOperation;
 import de.fosd.jdime.stats.ElementStatistics;
@@ -49,7 +46,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.CompositeFileComparator;
 import org.apache.commons.math3.util.Pair;
-import org.omg.PortableInterceptor.SUCCESSFUL;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
@@ -70,7 +66,6 @@ import java.util.stream.IntStream;
 
 import static de.fosd.jdime.Checker.TMP_FOLDER;
 import static de.fosd.jdime.stats.MergeScenarioStatus.FAILED;
-import static de.fosd.jdime.util.SuccessLevel.SUCCESS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.logging.Level.SEVERE;
 import static org.apache.commons.io.comparator.DirectoryFileComparator.DIRECTORY_COMPARATOR;
@@ -765,8 +760,13 @@ public class FileArtifact extends Artifact<FileArtifact> {
         throw new NotYetImplementedException();
     }
 
-    private String getTempFileName() {
-        return getFile().getAbsolutePath().replace(java.io.File.separator.charAt(0), '.');
+    public String getTempFileName() {
+        String x = getFile().getAbsolutePath().replace(java.io.File.separator.charAt(0), '.');
+        if (x.length() > 200) {
+            x = x.substring(0, 200);
+            x += ".java";
+        }
+        return x;
     }
 
     /**
@@ -779,7 +779,9 @@ public class FileArtifact extends Artifact<FileArtifact> {
     public ASTNodeArtifact createASTNodeArtifact(Revision revision) {
         assert isFile();
 
-        Path path = Paths.get(TMP_FOLDER, "AutoMerge.Tmp." + revision.getName() + ".java");
+        Path path = Paths.get(TMP_FOLDER,
+                "AM.Tmp." + revision.getName() + "." + System.currentTimeMillis() + "." +
+                        getTempFileName());
         File file = path.toFile();
         try {
             OutputStreamWriter out = new OutputStreamWriter(FileUtils.openOutputStream(file), UTF_8);
@@ -796,7 +798,8 @@ public class FileArtifact extends Artifact<FileArtifact> {
     public FileArtifact createTmpFileArtifact() {
         assert isFile() && content != null;
 
-        Path path = Paths.get(TMP_FOLDER, "AutoMerge.Tmp.Out.java");
+        Path path = Paths.get(TMP_FOLDER,
+                "AM.Tmp.Out." + System.currentTimeMillis() + "." + getTempFileName());
         File file = path.toFile();
         try {
             OutputStreamWriter out = new OutputStreamWriter(FileUtils.openOutputStream(file), UTF_8);

@@ -26,7 +26,7 @@ public class Checker {
 
     private static final Logger LOG = Logger.getLogger(Checker.class.getCanonicalName());
 
-    public static String TMP_FOLDER = "/tmp";
+    public static String TMP_FOLDER = "./tmp";
 
     public static Pair<Boolean, Pair<Double, Integer>> check(FileArtifact expected, FileArtifact target,
                                                              boolean hasConflict) {
@@ -62,7 +62,8 @@ public class Checker {
             }
 
             // save temp files
-            Path leftPath = Paths.get(TMP_FOLDER, "AutoMerge.Tmp.LeftTarget.java");
+            Path leftPath = Paths.get(TMP_FOLDER,
+                    "AM.Tmp.LeftTarget." + System.currentTimeMillis() + "." + target.getTempFileName());
             File leftFile = leftPath.toFile();
             PrintWriter pw = null;
             try {
@@ -75,7 +76,8 @@ public class Checker {
             }
             pw.close();
 
-            Path rightPath = Paths.get(TMP_FOLDER, "AutoMerge.Tmp.RightTarget.java");
+            Path rightPath = Paths.get(TMP_FOLDER,
+                    "AM.Tmp.RightTarget." + System.currentTimeMillis() + "." + target.getTempFileName());
             File rightFile = rightPath.toFile();
             try {
                 pw = new PrintWriter(new FileWriter(rightFile));
@@ -129,13 +131,12 @@ public class Checker {
     }
 
     public static void applyCheck(FileArtifact expected, FileArtifact target) {
-        expected.setRevision(MergeContext.EXPECTED);
-        target.setRevision(MergeScenario.TARGET);
-
         boolean hasConflict = target.getContent().contains(CONFLICT_START);
+
         if (hasConflict) {
             LOG.warning("Check: Output has conflict: " + target.getFile().getAbsolutePath());
         }
+
         showCheckResult(check(expected, target, hasConflict));
     }
 
