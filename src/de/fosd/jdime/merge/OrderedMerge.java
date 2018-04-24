@@ -10,6 +10,7 @@ import de.fosd.jdime.operations.MergeOperation;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -158,50 +159,58 @@ public class OrderedMerge<T extends Artifact<T>> extends BasicMerge<T> implement
 
     private void handleSuspended(List<T> suspended, Revision b, Revision l, Revision r,
                                  T target, MergeContext context) {
-        int leftCount = 0;
-        int rightCount = 0;
+        T tmpTarget = target.copy();
+        tmpTarget.clearChildren();
 
         for (T n : suspended) {
             if (n.getRevision().equals(l)) {
-                leftCount++;
+                simpleMerge(n, tmpTarget, context, l, r, b, true);
             } else if (n.getRevision().equals(r)) {
-                rightCount++;
+                simpleMerge(n, tmpTarget, context, r, l, b, false);
             } else {
                 LOG.severe("Ordered: handle suspend: WTF revision: " + n.getRevision());
             }
         }
 
-        if (rightCount == 0) { // all left
-            for (T n : suspended) {
-                simpleMerge(n, target, context, l, r, b, true);
-            }
-            return;
-        }
-        if (leftCount == 0) { // all right
-            for (T n : suspended) {
-                simpleMerge(n, target, context, r, l, b, false);
-            }
-            return;
-        }
-
-        // conflict
-        LOG.fine("Ordered: handle suspend: conflict");
-
-        T lefts = target.copy();
-        lefts.clearChildren();
-        T rights = target.copy();
-        rights.clearChildren();
-
-        for (T n : suspended) {
+        int leftCount = 0;
+        int rightCount = 0;
+        for (T n : tmpTarget.getChildren()) {
             if (n.getRevision().equals(l)) {
-                lefts.addChild(n);
-            } else {
-                rights.addChild(n);
+                leftCount++;
+            } else if (n.getRevision().equals(r)) {
+                rightCount++;
             }
         }
 
-        ConflictOperation<T> conflictOp = new ConflictOperation<>(
-                lefts, rights, target, l.getName(), r.getName(), null, true);
-        conflictOp.apply(context);
+        if (leftCount > 0 && rightCount > 0) {// conflict
+            LOG.info("Ordered: handle suspend: conflict");
+            if (LOG.isLoggable(Level.FINE)) {
+                for (T n : suspended) {
+                    System.out.println(show(n));
+                    System.out.println(n.prettyPrint());
+                }
+            }
+
+            T lefts = target.copy();
+            lefts.clearChildren();
+            T rights = target.copy();
+            rights.clearChildren();
+
+            for (T n : suspended) {
+                if (n.getRevision().equals(l)) {
+                    lefts.addChild(n);
+                } else {
+                    rights.addChild(n);
+                }
+            }
+
+            ConflictOperation<T> conflictOp = new ConflictOperation<>(
+                    lefts, rights, target, l.getName(), r.getName(), null, true);
+            conflictOp.apply(context);
+        } else { // no conflict: apply results
+            for (T n : tmpTarget.getChildren()) {
+                target.addChild(n);
+            }
+        }
     }
 }
