@@ -166,6 +166,7 @@ local.properties
 
 ### JDime Specific
 !JJ7.jar
+!extendj.jar
 
 ### Gradle template
 .gradle
