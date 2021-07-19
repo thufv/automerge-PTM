@@ -26,12 +26,14 @@ $ cmake ..
 $ cmake --build .
 ```
 3. The generated library file `libgit2-0.28.3/build/libgit2.dylib` is what we need
-4. Clone [JNativeMerge](https://gitlab.infosun.fim.uni-passau.de/seibt/JNativeMerge) (under exactly this name) as a sibling directory of this directory (e.g. you have `Workspace/JNativeMerge/` and `Workspace/automerge-PTM/`)
+4. Clone [JNativeMerge](https://gitlab.infosun.fim.uni-passau.de/seibt/JNativeMerge) (under exactly this name) as a sibling folder (e.g. you have `Workspace/JNativeMerge/` and `Workspace/automerge-PTM/`)
 5. In file `JNativeMerge/gradle.properties`, set `jnativemerge.libgit2.path=<Absolute Path to libgit2.dylib>`
 6. In JNativeMerge project root folder `JNativeMerge/`, run `./gradlew test` to test if the library was correctly included
 7. Switch back to this project root folder `automerge-PTM/`, create a file `gradle.properties` and write `JNM_MAVEN=false`
 
 Now you are done. Go to next section "Gradle Build".
+
+p.s. Try the above instructions if you meet difficulties on Linux or Windows (but you use a different dynamic library format).
 
 ### Gradle Build
 
@@ -39,7 +41,7 @@ In project root folder `automerge-PTM/`, run `./gradlew installDist`.
 
 If you run this for the first time, it will take a couple of minutes to download the correct version of `gradle` and then the Java dependencies used by JDime.
 
-If build is successful, run `./build/install/JDime/bin/JDime` (also in the project root folder) to check the CLI options. Most options are inherited from JDime.
+If build is successful, run `./build/install/JDime/bin/JDime` (also in the project root folder). If successful, help messages are printed.
 
 ## Basic Usage
 
@@ -49,7 +51,7 @@ $ ./build/install/JDime/bin/JDime --mode structured --output <file/folder> <left
 
 This will perform a three-way structured merge on the merge scenario specified by the base, left and right version you provide. Only Java source files are considered and merged.
 
-Our proper tree matching algorithm is for "structured" mode only. We provide an option `-th,--threshold <percentage>` to let users specify the "quality threshold ($\theta$)" (default value 0.5) mentioned in the paper.
+Our proper tree matching algorithm is for "structured" mode only. We provide an option `-th,--threshold <percentage>` to let users specify the "quality threshold ($\theta$)" (default value 0.5) mentioned in the paper. Other options are inherited from JDime.
 
 ## License
 
