@@ -1,63 +1,56 @@
-# JDime  -  Structured Merge with Auto-Tuning
+# Structured Merge with Proper Tree Matching
 
-[![Build Status](https://travis-ci.org/se-passau/jdime.svg?branch=master)](https://travis-ci.org/se-passau/jdime) (master)  
-[![Build Status](https://travis-ci.org/se-passau/jdime.svg?branch=develop)](https://travis-ci.org/se-passau/jdime?branch=develop) (develop)
+AutoMerge is a variant of [JDime](https://github.com/se-sic/jdime) on structured merging. This repository is a branch on improving merge precision using Proper Tree Matching (PTM). It is the prototype implementation of the paper *Enhancing Precision of Structured Merge by Proper Tree Matching* [(DOI)](https://ieeexplore.ieee.org/document/8802856).
 
-## License & Copyright
-* Copyright (C) 2013-2014 Olaf Lessenich
-* Copyright (C) 2014-2017 University of Passau, Germany
-> Authors: Olaf Lessenich, Georg Seibt
+This implementation is based on JDime v0.4.3.
 
-All rights reserved.
+## Build
 
-JDime is covered by the GNU Lesser General Public License.
-The full license text is distributed with this software. See the `LICENSE` file.
+Make sure your current shell is now running JDK 8 (even JDK 11 is too "new" for the gradle we are using).
 
-## Tools Used:
-JDime uses these tools/libraries:
+### JNativeMerge (Dependency)
 
-* ExtendJ (https://bitbucket.org/jastadd/jastaddj)
-> Commit [85fe215](https://bitbucket.org/extendj/extendj/commits/85fe215542d5cde4753e10a2b068b394f79d7984)
-> Copyright (c) 2005-2008, Torbjörn Ekman
-> Copyright (c) 2005-2017, ExtendJ Committers
-> ExtendJ is covered by the Modified BSD License.
-> The full license text is distributed with this software.
-> See the file licenses/ExtendJ-BSD.
+Since JDime uses [JNativeMerge](https://gitlab.infosun.fim.uni-passau.de/seibt/JNativeMerge) under the hood to implement line-based textual merging via the `libgit2` native library, you must have it installed and let JVM correctly load it. Otherwise, you are likely to meet the following exception:
+```
+java.lang.LinkageError: Failed to load the git2 native library.
+  at de.uni_passau.fim.seibt.LibGit2.<clinit>(LibGit2.java:128)
+```
 
-The changes that were made to ExtendJ are shipped with this software
-and covered by the Modified BSD License.
-See patches/ExtendJ for the changes,
-and patches/ExtendJ/LICENSE for the license text.
+According to [this issue](https://github.com/se-sic/jdime/issues/21), installing JNativeMerge with `libgit2` takes extra effort on Mac. Here, we summarize the installation steps that we succeeded in our Intel MacBook Pro (OS version 11.3):
 
-## System Requirements:
-* JDK8 + JavaFX
-* git (http://git-scm.com/)
-* libgit2 (https://libgit2.github.com/)
+1. Download `libgit2` [v0.28.3](https://github.com/libgit2/libgit2/releases/tag/v0.28.3)
+2. Build `libgit2` via `cmake` (in folder `libgit2-0.28.3/`):
+```sh
+$ mkdir build && cd build
+$ cmake ..
+$ cmake --build .
+```
+3. The generated library file `libgit2-0.28.3/build/libgit2.dylib` is what we need
+4. Clone [JNativeMerge](https://gitlab.infosun.fim.uni-passau.de/seibt/JNativeMerge) (under exactly this name) as a sibling directory of this directory (e.g. you have `Workspace/JNativeMerge/` and `Workspace/automerge-PTM/`)
+5. In file `JNativeMerge/gradle.properties`, set `jnativemerge.libgit2.path=<Absolute Path to libgit2.dylib>`
+6. In JNativeMerge project root folder `JNativeMerge/`, run `./gradlew test` to test if the library was correctly included
+7. Switch back to this project root folder `automerge-PTM/`, create a file `gradle.properties` and write `JNM_MAVEN=false`
 
-__Debian/Ubuntu:__
-`apt-get install git libgit2-dev`
+Now you are done. Go to next section "Gradle Build".
 
-__Redhat/Fedora:__
-`dnf install git libgit2`
+### Gradle Build
 
-__Suse/OpenSuse:__
-`zypper install git libgit2`
+In project root folder `automerge-PTM/`, run `./gradlew installDist`.
 
-__FreeBSD:__
-`pkg install git openjfx8-devel libgit2`
+If you run this for the first time, it will take a couple of minutes to download the correct version of `gradle` and then the Java dependencies used by JDime.
 
-## Installation:
-Clone the repository using `git clone $URL`.
+If build is successful, run `./build/install/JDime/bin/JDime` (also in the project root folder) to check the CLI options. Most options are inherited from JDime.
 
-JDime uses gradle as a build system.
-To avoid version mismatches with already installed instances of gradle, you can use the supplied gradle wrapper `gradlew` that bootstraps the right version of gradle automatically.
+## Basic Usage
 
+```sh
+$ ./build/install/JDime/bin/JDime --mode structured --output <file/folder> <leftVersion> <baseVersion> <rightVersion>
+```
 
-After running `./gradlew installDist`, the directory `build/install/JDime/bin` will contain Unix and Windows scripts that you can use to start the application.
+This will perform a three-way structured merge on the merge scenario specified by the base, left and right version you provide. Only Java source files are considered and merged.
 
-## Usage:
-The input versions are passed to JDime as command line arguments. To perform a three-way merge, JDime is invoked as follows:
+Our proper tree matching algorithm is for "structured" mode only. We provide an option `-th,--threshold <percentage>` to let users specify the "quality threshold ($\theta$)" (default value 0.5) mentioned in the paper.
 
-`JDime --mode [unstructured|structured|autotuning] --output [file/directory] <leftVersion> <baseVersion> <rightVersion>`
+## License
 
-Run `JDime --help` to show more extensive usage information.
+We are using the same license as in JDime: GNU Lesser General Public License. The license files are inherited from JDime repo.
